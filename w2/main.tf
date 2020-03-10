@@ -82,7 +82,8 @@ resource "aws_iam_role_policy" "bucket_policy" {
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [ "s3:*" ],
+      "Action": [
+       "s3:*" ],
       "Resource": [
         "arn:aws:s3:::aishchenko-test/*"
       ]

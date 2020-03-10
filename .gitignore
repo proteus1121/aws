@@ -1,1 +1,7 @@
 /w2/.terraform.tfstate.lock.info
+/w2/terraform
+/w2/terraform.tfstate
+/w2/terraform.tfstate.backup
+/w2/testkey.pem
+/.idea/
+/w2/.terraform/
