@@ -5,3 +5,6 @@
 /w2/testkey.pem
 /.idea/
 /w2/.terraform/
+/w3/.terraform/
+/w3/terraform.tfstate.backup
+/w3/terraform.tfstate
