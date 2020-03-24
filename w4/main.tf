@@ -7,9 +7,10 @@ resource "aws_vpc" "vpc_main" {
 }
 
 resource "aws_subnet" "public_sb" {
-  vpc_id     = aws_vpc.vpc_main.id
+  vpc_id = aws_vpc.vpc_main.id
   cidr_block = "10.0.1.0/24"
   availability_zone = "us-east-1a"
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "public"
@@ -17,7 +18,7 @@ resource "aws_subnet" "public_sb" {
 }
 
 resource "aws_subnet" "private_sb" {
-  vpc_id     = aws_vpc.vpc_main.id
+  vpc_id = aws_vpc.vpc_main.id
   cidr_block = "10.0.2.0/24"
   availability_zone = "us-east-1e"
 
@@ -43,9 +44,14 @@ resource "aws_route_table" "r" {
   }
 }
 
-resource "aws_security_group" "my-asg-sg" {
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.public_sb.id
+  route_table_id = aws_route_table.r.id
+}
+
+resource "aws_security_group" "public-sg" {
   vpc_id = aws_vpc.vpc_main.id
-  name = "my-asg-sg"
+  name = "public-sg"
 
   egress {
     from_port = 0
@@ -54,39 +60,82 @@ resource "aws_security_group" "my-asg-sg" {
     cidr_blocks = [
       "0.0.0.0/0"]
   }
-}
 
-resource "aws_security_group_rule" "inbound_ssh" {
-  from_port = 22
-  protocol = "tcp"
-  security_group_id = aws_security_group.my-asg-sg.id
-  to_port = 22
-  type = "ingress"
-  cidr_blocks = [
-    "0.0.0.0/0"]
-}
+  ingress {
+    //ssh
+    from_port = 22
+    protocol = "tcp"
+    to_port = 22
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
 
-resource "aws_security_group_rule" "inbound_http" {
-  from_port = 80
-  protocol = "tcp"
-  security_group_id = aws_security_group.my-asg-sg.id
-  to_port = 80
-  type = "ingress"
-  cidr_blocks = [
-    "0.0.0.0/0"]
+  ingress {
+    //http
+    from_port = 80
+    protocol = "tcp"
+    to_port = 80
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
 }
-
 
 resource "aws_instance" "public_instance" {
   ami = "ami-0ff8a91507f77f867"
   instance_type = "t2.micro"
   key_name = "testkey"
   security_groups = [
-    aws_security_group.my-asg-sg.id]
-  subnet_id     = aws_subnet.public_sb.id
+    aws_security_group.public-sg.id]
+  subnet_id = aws_subnet.public_sb.id
   availability_zone = "us-east-1a"
   tags = {
     Name = "public"
+  }
+  iam_instance_profile = aws_iam_instance_profile.test_profile.id
+
+  user_data = <<-EOF
+              #!/bin/bash
+              aws s3 cp s3://aishchenko-test/testkey.pem .
+              EOF
+}
+
+resource "aws_security_group" "private-sg" {
+  vpc_id = aws_vpc.vpc_main.id
+  name = "private-sg"
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
+
+  ingress {
+    //ssh
+    from_port = 22
+    protocol = "tcp"
+    to_port = 22
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
+
+  ingress {
+    //http
+    from_port = 80
+    protocol = "tcp"
+    to_port = 80
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
+
+  ingress {
+    //icmp
+    cidr_blocks = [
+      "0.0.0.0/0"]
+    protocol = "icmp"
+    from_port = 8
+    to_port = 8
   }
 }
 
@@ -95,10 +144,55 @@ resource "aws_instance" "private_instance" {
   instance_type = "t2.micro"
   key_name = "testkey"
   security_groups = [
-    aws_vpc.vpc_main.default_security_group_id]
-  subnet_id     = aws_subnet.private_sb.id
+    aws_security_group.private-sg.id]
+  subnet_id = aws_subnet.private_sb.id
   availability_zone = "us-east-1e"
   tags = {
     Name = "private"
   }
+}
+
+resource "aws_iam_role_policy" "bucket_policy" {
+  name = "web_iam_role_policy"
+  role = aws_iam_role.test_iam_role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+       "s3:*" ],
+      "Resource": [
+        "arn:aws:s3:::aishchenko-test/*"
+      ]
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_instance_profile" "test_profile" {
+  name = "test_profile"
+  role = "test_iam_role"
+}
+
+resource "aws_iam_role" "test_iam_role" {
+  name = "test_iam_role"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
 }
