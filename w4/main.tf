@@ -96,6 +96,13 @@ resource "aws_instance" "public_instance" {
   user_data = <<-EOF
               #!/bin/bash
               aws s3 cp s3://aishchenko-test/testkey.pem .
+              sudo su
+              yum -y update
+              yum -y install httpd
+              service httpd start
+              chkconfig httpd on
+              cd /var/www/html
+              echo "<html><h1>This is WebServer from public subnet</h1></html>" > index.html
               EOF
 }
 
@@ -150,6 +157,16 @@ resource "aws_instance" "private_instance" {
   tags = {
     Name = "private"
   }
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo su
+              yum -y update
+              yum -y install httpd
+              service httpd start
+              chkconfig httpd on
+              cd /var/www/html
+              echo "<html><h1>This is WebServer from private subnet</h1></html>" > index.html
+              EOF
 }
 
 resource "aws_iam_role_policy" "bucket_policy" {
@@ -195,4 +212,65 @@ resource "aws_iam_role" "test_iam_role" {
   ]
 }
 EOF
+}
+
+resource "aws_instance" "nat_instance" {
+  ami = "ami-00a9d4a05375b2763"
+  instance_type = "t2.micro"
+  security_groups = [
+    aws_security_group.public-sg.id]
+  subnet_id = aws_subnet.public_sb.id
+  availability_zone = "us-east-1a"
+  source_dest_check = false
+  tags = {
+    Name = "nat"
+  }
+}
+
+resource "aws_default_route_table" "vpc_default_r" {
+  default_route_table_id = aws_vpc.vpc_main.default_route_table_id
+
+  route {
+    cidr_block        = "0.0.0.0/0"
+    instance_id = aws_instance.nat_instance.id
+  }
+}
+
+resource "aws_lb_target_group" "bar" {
+  name = "elb"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.vpc_main.id
+  health_check {
+    path = "/index.html"
+    protocol = "http"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "test" {
+  target_group_arn = aws_lb_target_group.bar.arn
+  target_id        = aws_instance.public_instance.id
+}
+
+resource "aws_lb_target_group_attachment" "test2" {
+  target_group_arn = aws_lb_target_group.bar.arn
+  target_id        = aws_instance.private_instance.id
+}
+
+resource "aws_lb" "test_lb" {
+  name               = "test-lb"
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.public-sg.id]
+  subnets            = [aws_subnet.public_sb.id, aws_subnet.private_sb.id]
+}
+
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.test_lb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.bar.arn
+  }
 }
