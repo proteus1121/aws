@@ -16,7 +16,7 @@ resource "aws_sns_topic_subscription" "user_updates_sqs_target" {
   endpoint  = aws_sqs_queue.user_updates_queue.arn
 }
 
-resource "aws_sns_topic_subscription" "techdb_email_alerts_sub" {
+resource "aws_sns_topic_subscription" "sms_alerts_sub" {
   topic_arn = aws_sns_topic.user_updates.arn
   protocol = "sms"
   endpoint = "XXXXXXXX"
