@@ -8,34 +8,12 @@ resource "aws_vpc" "vpc_main" {
   enable_dns_hostnames = true
 }
 
-resource "aws_security_group" "bastion-sg" {
-  vpc_id = aws_vpc.vpc_main.id
-  name = "bastion-sg"
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = [
-      "0.0.0.0/0"]
-  }
-
-    ingress {
-      //ssh
-      from_port = 22
-      protocol = "tcp"
-      to_port = 22
-      cidr_blocks = [
-        "0.0.0.0/0"]
-    }
-}
-
 resource "aws_instance" "bastion" {
   ami = "ami-0ff8a91507f77f867"
   instance_type = "t2.micro"
   key_name = "testkey"
   security_groups = [
-    aws_security_group.bastion-sg.id]
+    aws_security_group.public-sg.id]
   subnet_id = aws_subnet.public_sb.id
   availability_zone = "us-east-1a"
   iam_instance_profile = aws_iam_instance_profile.aws_s3_profile.id

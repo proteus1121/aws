@@ -84,6 +84,15 @@ resource "aws_route_table_association" "a" {
   route_table_id = aws_route_table.r.id
 }
 
+resource "aws_default_route_table" "vpc_default_r" {
+  default_route_table_id = aws_vpc.vpc_main.default_route_table_id
+
+  route {
+    cidr_block        = "0.0.0.0/0"
+    instance_id = aws_instance.bastion.id
+  }
+}
+
 resource "aws_security_group" "public-sg" {
   vpc_id = aws_vpc.vpc_main.id
   name = "public-sg"

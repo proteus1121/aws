@@ -243,7 +243,7 @@ resource "aws_lb_target_group" "bar" {
   vpc_id   = aws_vpc.vpc_main.id
   health_check {
     path = "/index.html"
-    protocol = "http"
+    protocol = "HTTP"
   }
 }
 

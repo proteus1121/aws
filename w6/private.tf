@@ -23,7 +23,8 @@ resource "aws_instance" "private_instance" {
   user_data = <<-EOF
               #!/bin/bash
               sudo su
-              aws s3 cp s3://aishchenko-test/persist3-0.0.1-SNAPSHOT.jar .
+              sudo yum -y install postgresql
+              sudo aws s3 cp s3://aishchenko-test/persist3-0.0.1-SNAPSHOT.jar .
               sudo yum install java-1.8.0-openjdk -y
               sudo yum remove java-1.7.0-openjdk -y
               export RDS_HOST="${aws_db_instance.mydb1.address}"
