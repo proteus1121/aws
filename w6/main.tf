@@ -203,6 +203,15 @@ resource "aws_security_group" "private-sg" {
     from_port = 5432
     to_port = 5432
   }
+//
+//  ingress {
+//    //app
+//    cidr_blocks = [
+//      "0.0.0.0/0"]
+//    protocol = "tcp"
+//    from_port = 8080
+//    to_port = 8080
+//  }
 }
 
 resource "aws_instance" "private_instance" {
@@ -224,6 +233,7 @@ resource "aws_instance" "private_instance" {
               sudo aws s3 cp s3://aishchenko-test/persist3-0.0.1-SNAPSHOT.jar .
               sudo yum install java-1.8.0-openjdk -y
               sudo yum remove java-1.7.0-openjdk -y
+              sudo echo "${aws_db_instance.mydb1.address}" > address.txt
               export RDS_HOST="${aws_db_instance.mydb1.address}"
               sudo java -jar persist3-0.0.1-SNAPSHOT.jar
               EOF

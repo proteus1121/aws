@@ -39,8 +39,7 @@ resource "aws_iam_role_policy" "aws_s3_policy" {
       "Effect": "Allow",
       "Action": [
        "s3:*",
-        "sqs:SendMessage",
-         "sqs:ReceiveMessage",
+        "sqs:*",
         "SNS:*"],
       "Resource": [
         "arn:aws:s3:::aishchenko-test/*",

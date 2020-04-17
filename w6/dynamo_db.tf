@@ -37,11 +37,13 @@ resource "aws_iam_role_policy" "aws_dynamodb_policy" {
       "Action": [
        "s3:*",
         "dynamodb:*",
+        "sqs:*",
         "SNS:*"],
       "Resource": [
         "arn:aws:s3:::aishchenko-test/*",
         "arn:aws:dynamodb:us-east-1:*:table/edu-lohika-training-aws-dynamodb",
-        "${aws_sns_topic.user_updates.arn}"
+        "${aws_sns_topic.user_updates.arn}",
+        "arn:aws:sqs:*:*:*"
       ]
     }
   ]
