@@ -40,10 +40,12 @@ resource "aws_iam_role_policy" "aws_s3_policy" {
       "Action": [
        "s3:*",
         "sqs:SendMessage",
-         "sqs:ReceiveMessage"],
+         "sqs:ReceiveMessage",
+        "SNS:*"],
       "Resource": [
         "arn:aws:s3:::aishchenko-test/*",
-        "arn:aws:sqs:*:*:*"
+        "arn:aws:sqs:*:*:*",
+        "${aws_sns_topic.user_updates.arn}"
       ]
     }
   ]
